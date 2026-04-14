@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
+import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
 import { ExternalLink } from 'lucide-react';
 import { FaGithub } from 'react-icons/fa';
 
@@ -27,84 +27,135 @@ const projects = [
 ];
 
 const ProjectCard = ({ project, index }) => {
+  const cardRef = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const rotateX = useSpring(useTransform(y, [-100, 100], [15, -15]), { stiffness: 100, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-100, 100], [-15, 15]), { stiffness: 100, damping: 30 });
+
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set(e.clientX - centerX);
+    y.set(e.clientY - centerY);
+
+    // Set CSS variables for the follow-gradient effect
+    cardRef.current.style.setProperty('--x', `${e.clientX - rect.left}px`);
+    cardRef.current.style.setProperty('--y', `${e.clientY - rect.top}px`);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
   return (
     <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      whileHover={{ 
-        y: -10,
-        boxShadow: `0 0 40px ${project.primaryColor}4D` // 4D is ~30% alpha
-      }}
-      className="glass"
       style={{
-        overflow: 'hidden',
-        position: 'relative',
-        height: '480px',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'all 0.3s ease',
-        background: project.gradient
+        perspective: 1000,
+        rotateX,
+        rotateY,
+        transformStyle: 'preserve-3d',
       }}
     >
-      <div style={{ height: '220px', overflow: 'hidden' }}>
-        <img 
-          src={project.image} 
-          alt={project.title} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
-          onMouseOver={(e) => e.target.style.transform = 'scale(1.1)'}
-          onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+      <motion.div
+        whileHover={{ 
+          y: -10,
+          boxShadow: `0 20px 40px ${project.primaryColor}33`,
+        }}
+        className="glass"
+        style={{
+          overflow: 'hidden',
+          position: 'relative',
+          height: '480px',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'box-shadow 0.3s ease',
+          background: project.gradient,
+          border: `1px solid ${project.primaryColor}22`
+        }}
+      >
+        {/* Animated Gradient Border Overlay */}
+        <motion.div 
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: `radial-gradient(circle at var(--x) var(--y), ${project.primaryColor}22, transparent 80%)`,
+            pointerEvents: 'none'
+          }}
         />
-      </div>
-      
-      <div style={{ padding: '25px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>{project.title}</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px', flex: 1, lineHeight: '1.5' }}>
-          {project.description}
-        </p>
-        
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-          {project.tags.map(tag => (
-            <span key={tag} style={{
-              padding: '4px 12px',
-              borderRadius: '20px',
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              color: project.primaryColor,
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              border: `1px solid ${project.primaryColor}33`
-            }}>{tag}</span>
-          ))}
-        </div>
 
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          {project.github && (
-            <a 
-              href={project.github} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              style={{ color: 'var(--text-main)', transition: 'color 0.3s' }}
-              onMouseOver={(e) => e.currentTarget.style.color = project.primaryColor}
-              onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-main)'}
-            >
-              <FaGithub size={22} />
-            </a>
-          )}
-          {project.demo && (
-            <a 
-              href={project.demo} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              style={{ color: 'var(--text-main)', transition: 'color 0.3s' }}
-              onMouseOver={(e) => e.currentTarget.style.color = project.primaryColor}
-              onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-main)'}
-            >
-              <ExternalLink size={22} />
-            </a>
-          )}
+        <div style={{ height: '220px', overflow: 'hidden', position: 'relative' }}>
+          <img 
+            src={project.image} 
+            alt={project.title} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
+          />
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: `linear-gradient(to bottom, transparent, rgba(0,0,0,0.5))`,
+            opacity: 0,
+            transition: 'opacity 0.3s ease'
+          }} />
         </div>
-      </div>
+        
+        <div style={{ padding: '25px', flex: 1, display: 'flex', flexDirection: 'column', zIndex: 1 }}>
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '10px', color: '#fff' }}>{project.title}</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px', flex: 1, lineHeight: '1.5' }}>
+            {project.description}
+          </p>
+          
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+            {project.tags.map(tag => (
+              <span key={tag} style={{
+                padding: '4px 12px',
+                borderRadius: '20px',
+                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                color: project.primaryColor,
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                border: `1px solid ${project.primaryColor}33`
+              }}>{tag}</span>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginTop: 'auto' }}>
+            {project.github && (
+              <motion.a 
+                whileHover={{ scale: 1.1, color: project.primaryColor }}
+                href={project.github} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style={{ color: 'var(--text-main)', transition: 'color 0.3s' }}
+              >
+                <FaGithub size={22} />
+              </motion.a>
+            )}
+            {project.demo && (
+              <motion.a 
+                whileHover={{ scale: 1.1, color: project.primaryColor }}
+                href={project.demo} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style={{ color: 'var(--text-main)', transition: 'color 0.3s' }}
+              >
+                <ExternalLink size={22} />
+              </motion.a>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 };

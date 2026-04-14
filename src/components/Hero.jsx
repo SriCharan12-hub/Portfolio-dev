@@ -1,16 +1,21 @@
-import React, { Suspense, useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { Suspense, useRef, useMemo, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 import * as random from 'maath/random/dist/maath-random.esm';
-import { motion } from 'framer-motion';
+import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
 
 function ParticleBackground(props) {
   const ref = useRef();
+  const { mouse } = useThree();
   const [sphere] = useMemo(() => [random.inSphere(new Float32Array(5000), { radius: 1.5 })], []);
 
   useFrame((state, delta) => {
     ref.current.rotation.x -= delta / 10;
     ref.current.rotation.y -= delta / 15;
+    
+    // Subtle mouse tilt
+    ref.current.rotation.x += (mouse.y * 0.2 - ref.current.rotation.x) * 0.1;
+    ref.current.rotation.y += (mouse.x * 0.2 - ref.current.rotation.y) * 0.1;
   });
 
   return (
@@ -28,7 +33,82 @@ function ParticleBackground(props) {
   );
 }
 
+const MagneticButton = ({ children, style, primary = false }) => {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const springConfig = { damping: 15, stiffness: 150 };
+  const springX = useSpring(x, springConfig);
+  const springY = useSpring(y, springConfig);
+
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const { left, top, width, height } = ref.current.getBoundingClientRect();
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    const distanceX = clientX - centerX;
+    const distanceY = clientY - centerY;
+
+    if (Math.abs(distanceX) < 100 && Math.abs(distanceY) < 100) {
+      x.set(distanceX * 0.4);
+      y.set(distanceY * 0.4);
+    } else {
+      x.set(0);
+      y.set(0);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.button
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        ...style,
+        x: springX,
+        y: springY,
+      }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      {children}
+    </motion.button>
+  );
+};
+
 const Hero = () => {
+  const name = "Palem Sri Charan";
+  
+  const container = {
+    hidden: { opacity: 0 },
+    visible: (i = 1) => ({
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.4 * i },
+    }),
+  };
+
+  const child = {
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        damping: 12,
+        stiffness: 100,
+      },
+    },
+    hidden: {
+      opacity: 0,
+      y: 50,
+    },
+  };
+
   return (
     <section id="home" style={{ height: '100vh', width: '100%', position: 'relative', overflow: 'hidden' }}>
       {/* 3D Background */}
@@ -52,48 +132,70 @@ const Hero = () => {
         padding: '0 20px',
         textAlign: 'center'
       }}>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <span style={{
-            color: 'var(--primary-neon)',
-            textTransform: 'uppercase',
-            letterSpacing: '5px',
-            fontSize: 'var(--fs-xs)',
-            fontWeight: '600',
-            marginBottom: '1rem',
-            display: 'block'
-          }}>Full Stack Developer & AI Enthusiast</span>
+        <div style={{ overflow: 'hidden' }}>
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            style={{
+              color: 'var(--primary-neon)',
+              textTransform: 'uppercase',
+              letterSpacing: '5px',
+              fontSize: 'var(--fs-xs)',
+              fontWeight: '600',
+              marginBottom: '1rem',
+              display: 'block'
+            }}
+          >
+            Full Stack Developer & AI Enthusiast
+          </motion.span>
           
-          <h1 style={{
-            fontSize: 'clamp(3rem, 10vw, 6rem)',
-            lineHeight: '1',
-            marginBottom: '1.5rem',
-            background: 'var(--grad-main)',
-            webkitBackgroundClip: 'text',
-            webkitTextFillColor: 'transparent',
-            letterSpacing: '-2px'
-          }}>
-            Palem Sri Charan
-          </h1>
+          <motion.h1
+            variants={container}
+            initial="hidden"
+            animate="visible"
+            style={{
+              fontSize: 'clamp(3.5rem, 10vw, 7rem)',
+              lineHeight: '1',
+              marginBottom: '1.5rem',
+              background: 'var(--grad-main)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-2px',
+              display: 'flex',
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}
+          >
+            {name.split(" ").map((word, index) => (
+              <span key={index} style={{ display: 'flex', marginRight: '20px' }}>
+                {word.split("").map((letter, i) => (
+                  <motion.span variants={child} key={i}>
+                    {letter}
+                  </motion.span>
+                ))}
+              </span>
+            ))}
+          </motion.h1>
 
-          <p style={{
-            color: 'var(--text-main)',
-            fontSize: '1.2rem',
-            maxWidth: '700px',
-            margin: '0 auto 2.5rem',
-            lineHeight: '1.6',
-            fontWeight: '500'
-          }}>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 1.5 }}
+            style={{
+              color: 'var(--text-main)',
+              fontSize: '1.2rem',
+              maxWidth: '700px',
+              margin: '0 auto 2.5rem',
+              lineHeight: '1.6',
+              fontWeight: '500'
+            }}
+          >
             Embracing the Tech Journey | Committed to Excellence in Full Stack Development, AI, and Cybersecurity | NIAT Student
-          </p>
+          </motion.p>
 
           <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <MagneticButton
               style={{
                 padding: '1rem 2.5rem',
                 borderRadius: '50px',
@@ -107,10 +209,8 @@ const Hero = () => {
               }}
             >
               View Projects
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            </MagneticButton>
+            <MagneticButton
               style={{
                 padding: '1rem 2.5rem',
                 borderRadius: '50px',
@@ -123,9 +223,9 @@ const Hero = () => {
               }}
             >
               Contact Me
-            </motion.button>
+            </MagneticButton>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Scroll indicator */}

@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Mail, MapPin, Phone, CheckCircle, ArrowRight } from 'lucide-react';
 
 const Contact = () => {
-  const [step, setStep] = useState(1); // 1: Form, 2: OTP, 3: Success
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState(1); // 1: Form, 3: Success
+  const [formData, setFormData] = useState({ name: '', email: '', message: '', website: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -14,55 +13,32 @@ const Contact = () => {
     setError('');
   };
 
-  const handleSendOtp = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/send-otp', {
+      // Use relative path for production compatibility, fallback to localhost for dev
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/contact' 
+        : 'http://localhost:5000/api/contact';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, name: formData.name })
+        body: JSON.stringify(formData)
       });
+      
       const data = await response.json();
       
       if (response.ok) {
-        setStep(2);
+        setStep(3);
       } else {
-        setError(data.error || 'Failed to send OTP. Please try again.');
+        setError(data.error || 'Failed to send message. Please try again.');
       }
     } catch (err) {
       setError('Connection to server failed. Please ensure the backend is running.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('http://localhost:5000/api/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: formData.email, 
-          otp, 
-          message: formData.message 
-        })
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep(3);
-      } else {
-        setError(data.error || 'Invalid OTP. Please check and try again.');
-      }
-    } catch (err) {
-      setError('Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -100,7 +76,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Email</div>
-                  <div style={{ fontSize: '1.1rem' }}>sricharanpalem@gmail.com</div>
+                  <div style={{ fontSize: '1.1rem' }}>sricharanpalem07@gmail.com</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
@@ -140,7 +116,7 @@ const Contact = () => {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  onSubmit={handleSendOtp}
+                  onSubmit={handleSubmit}
                   style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -201,6 +177,17 @@ const Contact = () => {
                       placeholder="Tell me about your project..."
                     />
                   </div>
+                  {/* Honeypot field - hidden from users */}
+                  <div style={{ display: 'none' }}>
+                    <input 
+                      type="text" 
+                      name="website" 
+                      value={formData.website} 
+                      onChange={handleInputChange} 
+                      tabIndex="-1" 
+                      autoComplete="off" 
+                    />
+                  </div>
                   {error && <p style={{ color: '#ff4444', fontSize: '0.85rem' }}>{error}</p>}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -224,77 +211,8 @@ const Contact = () => {
                       opacity: loading ? 0.7 : 1
                     }}
                   >
-                    {loading ? 'Sending Code...' : 'Get Verification Code'} <ArrowRight size={18} />
+                    {loading ? 'Sending Message...' : 'Send Message'} <ArrowRight size={18} />
                   </motion.button>
-                </motion.form>
-              )}
-
-              {step === 2 && (
-                <motion.form 
-                  key="otp"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  onSubmit={handleVerifyOtp}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '30px', flex: 1, justifyContent: 'center', textAlign: 'center' }}
-                >
-                  <div>
-                    <h4 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>Verify Email</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>We've sent a 6-digit code to <strong>{formData.email}</strong></p>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <input 
-                      required
-                      type="text" 
-                      maxLength="6"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      style={{ 
-                        padding: '20px', 
-                        borderRadius: '8px', 
-                        border: '2px solid var(--primary-neon)', 
-                        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                        color: '#fff',
-                        textAlign: 'center',
-                        fontSize: '2rem',
-                        letterSpacing: '10px',
-                        outline: 'none',
-                        fontWeight: '800'
-                      }} 
-                      placeholder="000000"
-                    />
-                    {error && <p style={{ color: '#ff4444', fontSize: '0.85rem' }}>{error}</p>}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '15px' }}>
-                    <button 
-                      type="button"
-                      onClick={() => setStep(1)}
-                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', padding: '12px', borderRadius: '8px', cursor: 'pointer' }}
-                    >
-                      Back
-                    </button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      disabled={loading}
-                      type="submit"
-                      style={{
-                        flex: 2,
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        background: 'var(--grad-main)',
-                        color: '#fff',
-                        fontWeight: '700',
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.7 : 1
-                      }}
-                    >
-                      {loading ? 'Verifying...' : 'Verify & Send Message'}
-                    </motion.button>
-                  </div>
                 </motion.form>
               )}
 
@@ -320,8 +238,7 @@ const Contact = () => {
                   <button 
                     onClick={() => {
                       setStep(1);
-                      setFormData({ name: '', email: '', message: '' });
-                      setOtp('');
+                      setFormData({ name: '', email: '', message: '', website: '' });
                     }}
                     style={{ marginTop: '20px', background: 'transparent', border: '1px solid var(--primary-neon)', color: 'var(--primary-neon)', padding: '10px 30px', borderRadius: '25px', cursor: 'pointer', fontWeight: '600' }}
                   >
@@ -339,4 +256,3 @@ const Contact = () => {
 };
 
 export default Contact;
-

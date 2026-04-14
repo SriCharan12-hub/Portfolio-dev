@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
+import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
 
 const experiences = [
   {
@@ -17,8 +17,20 @@ const experiences = [
 ];
 
 const Experience = () => {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end end"]
+  });
+
+  const scaleY = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   return (
-    <section id="experience" style={{ padding: '100px 0', background: 'var(--bg-dark)' }}>
+    <section id="experience" ref={containerRef} style={{ padding: '100px 0', background: 'var(--bg-dark)' }}>
       <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -32,15 +44,20 @@ const Experience = () => {
         </motion.div>
 
         <div style={{ position: 'relative', maxWidth: '800px', margin: '0 auto' }}>
-          {/* Central Line */}
-          <div style={{ 
-            position: 'absolute', 
-            left: '50%', 
-            transform: 'translateX(-50%)', 
-            height: '100%', 
-            width: '2px', 
-            background: 'linear-gradient(to bottom, var(--primary-neon), var(--secondary-neon), transparent)' 
-          }} />
+          {/* Animated Central Line */}
+          <motion.div 
+            style={{ 
+              position: 'absolute', 
+              left: '50%', 
+              top: 0,
+              bottom: 0,
+              transform: 'translateX(-50%)', 
+              width: '2px', 
+              background: 'linear-gradient(to bottom, var(--primary-neon), var(--secondary-neon), transparent)',
+              scaleY,
+              transformOrigin: 'top'
+            }} 
+          />
 
           {experiences.map((exp, index) => (
             <div key={index} style={{ 
@@ -50,31 +67,39 @@ const Experience = () => {
               width: '100%',
               position: 'relative'
             }}>
-              {/* Dot */}
-              <div style={{ 
-                position: 'absolute', 
-                left: '50%', 
-                top: '0', 
-                transform: 'translate(-50%, 0)', 
-                width: '16px', 
-                height: '16px', 
-                borderRadius: '50%', 
-                background: 'var(--bg-dark)', 
-                border: '3px solid var(--primary-neon)',
-                boxShadow: '0 0 10px var(--primary-neon)',
-                zIndex: 2
-              }} />
+              {/* Animated Dot */}
+              <motion.div 
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+                style={{ 
+                  position: 'absolute', 
+                  left: '50%', 
+                  top: '0', 
+                  transform: 'translate(-50%, 0)', 
+                  width: '16px', 
+                  height: '16px', 
+                  borderRadius: '50%', 
+                  background: 'var(--bg-dark)', 
+                  border: '3px solid var(--primary-neon)',
+                  boxShadow: '0 0 10px var(--primary-neon)',
+                  zIndex: 2
+                }} 
+              />
 
               <motion.div
-                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50, scale: 0.9 }}
+                whileInView={{ opacity: 1, x: 0, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: index * 0.1 }}
+                transition={{ type: 'spring', stiffness: 100, damping: 15, delay: index * 0.1 }}
+                whileHover={{ y: -5, boxShadow: `0 10px 30px rgba(0,0,0,0.5)` }}
                 className="glass"
                 style={{ 
                   width: '45%', 
                   padding: '30px',
-                  textAlign: index % 2 === 0 ? 'right' : 'left'
+                  textAlign: index % 2 === 0 ? 'right' : 'left',
+                  cursor: 'default'
                 }}
               >
                 <div style={{ color: 'var(--primary-neon)', fontWeight: '700', marginBottom: '5px' }}>{exp.period}</div>

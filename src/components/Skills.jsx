@@ -58,10 +58,16 @@ const Skills = () => {
           {skillCategories.map((category, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ 
+                type: "spring",
+                stiffness: 100,
+                damping: 15,
+                delay: index * 0.1 
+              }}
+              whileHover={{ y: -5 }}
               className="glass"
               style={{ 
                 padding: '40px',
@@ -86,11 +92,27 @@ const Skills = () => {
                 <h3 style={{ fontSize: '1.8rem', fontWeight: '700' }}>{category.title}</h3>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              <motion.div 
+                style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={{
+                  visible: {
+                    transition: {
+                      staggerChildren: 0.05
+                    }
+                  }
+                }}
+              >
                 {category.skills.map((skill, i) => (
                   <motion.div
                     key={skill}
-                    whileHover={{ scale: 1.1, backgroundColor: category.color, color: '#000' }}
+                    variants={{
+                      hidden: { opacity: 0, scale: 0.8 },
+                      visible: { opacity: 1, scale: 1 }
+                    }}
+                    whileHover={{ scale: 1.1, backgroundColor: category.color, color: '#000', boxShadow: `0 0 15px ${category.color}88` }}
                     style={{
                       padding: '8px 16px',
                       borderRadius: '8px',
@@ -106,7 +128,7 @@ const Skills = () => {
                     {skill}
                   </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </motion.div>
           ))}
         </div>

@@ -71,7 +71,9 @@ const Navbar = () => {
           margin: '0 10px'
         }} />
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <FaGithub size={20} color="var(--text-muted)" className="hover:text-primary-neon cursor-pointer" />
+          <a href="https://github.com/SriCharan12-hub" target="_blank" rel="noopener noreferrer">
+            <FaGithub size={20} color="var(--text-muted)" className="hover:text-primary-neon cursor-pointer" />
+          </a>
           <a href="https://www.linkedin.com/in/sri-charan-palem" target="_blank" rel="noopener noreferrer">
             <FaLinkedin size={20} color="var(--text-muted)" className="hover:text-primary-neon cursor-pointer" />
           </a>
